@@ -19,5 +19,13 @@ List<StudySession> findByUserIdAndStartTimeBetween(
     Long userId,
     LocalDateTime start,
     LocalDateTime end);
+
+Optional<StudySession> findFirstByUserIdAndStatusIn(
+	    Long userId,
+	    List<StudySessionStatus> statuses
+	);
+
+
+
 }
 

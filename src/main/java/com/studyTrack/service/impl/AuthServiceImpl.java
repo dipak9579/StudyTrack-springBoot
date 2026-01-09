@@ -4,8 +4,10 @@ package com.studyTrack.service.impl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.studyTrack.dto.AuthResponse;
 import com.studyTrack.dto.LoginRequest;
 import com.studyTrack.dto.RegisterRequest;
+import com.studyTrack.dto.UserResponse;
 import com.studyTrack.entity.Role;
 import com.studyTrack.entity.User;
 import com.studyTrack.repository.UserRepository;
@@ -38,14 +40,25 @@ public class AuthServiceImpl implements AuthService{
 	}
 
 	@Override
-	public String login(LoginRequest request) {
-		User user=userRepository.findByEmail(request.getEmail())
-				.orElseThrow(()->new RuntimeException("Invalid Credentials"));
-		
-		if(!passwordEncoder.matches(request.getPassword(),user.getPassword())) {
-			throw new RuntimeException("Invalid credentials");
-		}
-		return jwtUtil.generateToken(user.getEmail());
+	public AuthResponse login(LoginRequest request) {
+
+	    User user = userRepository.findByEmail(request.getEmail())
+	            .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+	    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+	        throw new RuntimeException("Invalid credentials");
+	    }
+
+	    String token = jwtUtil.generateToken(user.getEmail());
+
+	    return new AuthResponse(
+	            token,
+	            new UserResponse(
+	                    user.getName(),
+	                    user.getEmail()
+	            )
+	    );
 	}
+
 
 }

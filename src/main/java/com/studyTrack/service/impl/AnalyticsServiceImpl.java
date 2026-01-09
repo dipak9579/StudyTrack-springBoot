@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.studyTrack.dto.DailyProgressResponse;
 import com.studyTrack.entity.StudySession;
+import com.studyTrack.entity.StudySessionStatus;
 import com.studyTrack.entity.TaskStatus;
 import com.studyTrack.entity.User;
 import com.studyTrack.repository.StudySessionRepository;
@@ -45,11 +46,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         LocalDateTime end = today.atTime(LocalTime.MAX);
 
         long totalMinutes =
-                sessionRepository.findByUserIdAndStartTimeBetween(
-                        user.getId(), start, end)
-                        .stream()
-                        .mapToLong(StudySession::getTotalMinutes)
-                        .sum();
+        	    sessionRepository.findByUserIdAndStartTimeBetween(
+        	            user.getId(), start, end)
+        	        .stream()
+        	        .filter(s -> s.getStatus() == StudySessionStatus.COMPLETED) // 🔥
+        	        .filter(s -> s.getTotalMinutes() != null)
+        	        .mapToLong(StudySession::getTotalMinutes)
+        	        .sum();
+
 
         // Tasks
         long completed =
@@ -88,8 +92,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return responses;
     }
 
-    private DailyProgressResponse buildProgressForDate(
-            LocalDate date) {
+   
+    private DailyProgressResponse buildProgressForDate(LocalDate date) {
 
         User user = getCurrentUser();
 
@@ -97,19 +101,22 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         LocalDateTime end = date.atTime(LocalTime.MAX);
 
         long minutes =
-                sessionRepository.findByUserIdAndStartTimeBetween(
-                        user.getId(), start, end)
-                        .stream()
-                        .mapToLong(StudySession::getTotalMinutes)
-                        .sum();
+        	    sessionRepository.findByUserIdAndStartTimeBetween(
+        	            user.getId(), start, end)
+        	        .stream()
+        	        .filter(s -> s.getStatus() == StudySessionStatus.COMPLETED) // 🔥
+        	        .filter(s -> s.getTotalMinutes() != null)
+        	        .mapToLong(StudySession::getTotalMinutes)
+        	        .sum();
+
 
         long completedTasks =
-                taskRepository.findByUserIdAndStatus(
-                        user.getId(), TaskStatus.COMPLETED)
-                        .size();
+            taskRepository.findByUserIdAndStatus(
+                    user.getId(), TaskStatus.COMPLETED)
+                .size();
 
         int productivity =
-                calculateProductivity(minutes, completedTasks);
+            calculateProductivity(minutes, completedTasks);
 
         return DailyProgressResponse.builder()
                 .date(date)
@@ -120,6 +127,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .build();
     }
 
+    
     private int calculateProductivity(
             long studyMinutes, long completedTasks) {
 

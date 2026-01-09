@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.studyTrack.dto.StreakResponse;
 import com.studyTrack.entity.BadgeType;
 import com.studyTrack.entity.StudySession;
+import com.studyTrack.entity.StudySessionStatus;
 import com.studyTrack.entity.User;
 import com.studyTrack.repository.StudySessionRepository;
 import com.studyTrack.repository.UserRepository;
@@ -64,19 +65,22 @@ public class GamificationServiceImpl
         return streak;
     }
 
-    private long getTotalStudyMinutes(
-            User user, LocalDate date) {
+    private long getTotalStudyMinutes(User user, LocalDate date) {
 
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
 
         return sessionRepository
-                .findByUserIdAndStartTimeBetween(
-                        user.getId(), start, end)
-                .stream()
-                .mapToLong(StudySession::getTotalMinutes)
-                .sum();
+            .findByUserIdAndStartTimeBetween(
+                    user.getId(), start, end)
+            .stream()
+            .filter(s -> s.getStatus() == StudySessionStatus.COMPLETED) // 🔥
+            .filter(s -> s.getTotalMinutes() != null)
+            .mapToLong(StudySession::getTotalMinutes)
+            .sum();
     }
+
+
 
     private List<BadgeType> calculateBadges(
             User user, int streak) {
@@ -94,13 +98,16 @@ public class GamificationServiceImpl
         }
 
         long totalHours =
-                sessionRepository.findByUserIdAndStartTimeBetween(
-                        user.getId(),
-                        LocalDate.now().minusYears(1).atStartOfDay(),
-                        LocalDateTime.now())
-                        .stream()
-                        .mapToLong(StudySession::getTotalMinutes)
-                        .sum() / 60;
+        	    sessionRepository.findByUserIdAndStartTimeBetween(
+        	            user.getId(),
+        	            LocalDate.now().minusYears(1).atStartOfDay(),
+        	            LocalDateTime.now())
+        	        .stream()
+        	        .filter(s -> s.getStatus() == StudySessionStatus.COMPLETED) // 🔥
+        	        .filter(s -> s.getTotalMinutes() != null)
+        	        .mapToLong(StudySession::getTotalMinutes)
+        	        .sum() / 60;
+
 
         if (totalHours >= 30) {
             badges.add(BadgeType.THIRTY_HOURS_STUDY);
